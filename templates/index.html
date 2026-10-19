@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regression Explorer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">∿</div>
+        <div><h1>Regression Explorer</h1><p>Regression analysis &amp; model evaluation</p></div>
+      </div>
+      <span class="top-pill">MODEL COMPARISON</span>
+    </header>
+
+    <nav class="section-nav" aria-label="Analysis sections">
+      <a class="nav-button active" href="#overview">📊 Overview</a>
+      <a class="nav-button" href="#comparison">🏆 Model Comparison</a>
+      <a class="nav-button" href="#regression-plot">📈 Regression Plot</a>
+      <a class="nav-button" href="#residuals">🔎 Residuals</a>
+      <a class="nav-button" href="#conclusions">🎓 Conclusions</a>
+    </nav>
+    <main>
+      <section id="overview" class="page-section">
+      <section class="top-layout">
+        <aside class="panel settings">
+          <h2>Analysis settings</h2>
+          <label for="dataset">Select dataset</label>
+          <select id="dataset">
+            {% for dataset in datasets %}
+            <option value="{{ dataset.key }}">{{ dataset.name }}</option>
+            {% endfor %}
+          </select>
+          <label for="regression-method">Regression Method</label>
+          <select id="regression-method">
+            <option value="Best performing model">Best performing model</option>
+            <option value="Linear Regression">Linear Regression</option>
+            <option value="Polynomial Regression (degree 2)">Polynomial Regression</option>
+            <option value="Random Forest Regression">Random Forest Regression</option>
+          </select>
+          <label for="input-feature">Input Feature</label>
+          <select id="input-feature"></select>
+          <label for="test-split">Test split</label>
+          <select id="test-split">
+            <option value="0.2">80% train / 20% test</option>
+            <option value="0.25">75% train / 25% test</option>
+            <option value="0.3">70% train / 30% test</option>
+          </select>
+          <button id="run-analysis" class="button primary">Run regression</button>
+          <button id="reset-analysis" class="button secondary">Reset analysis</button>
+          <div class="settings-divider"></div>
+          <h3>Dataset details</h3>
+          <div class="detail-row"><span>Observations</span><strong id="observation-count">—</strong></div>
+          <div class="detail-row"><span>Input variable</span><strong id="input-name">—</strong></div>
+          <div class="detail-row"><span>Target variable</span><strong id="target-name">—</strong></div>
+          <div class="detail-row"><span>Evaluation</span><strong>Test set</strong></div>
+        </aside>
+
+        <section class="main-results">
+          <div class="metrics-grid">
+            <article class="metric-card"><span>Mean Absolute Error</span><strong id="mae">—</strong><small>MAE · lower is better</small></article>
+            <article class="metric-card"><span>Mean Squared Error</span><strong id="mse">—</strong><small>MSE · lower is better</small></article>
+            <article class="metric-card"><span>Root Mean Squared Error</span><strong id="rmse">—</strong><small>RMSE · lower is better</small></article>
+            <article class="metric-card"><span>R² Score</span><strong id="r2">—</strong><small>Higher is better</small></article>
+          </div>
+          <article id="regression-plot" class="panel chart-panel">
+            <div class="section-heading"><div><h2>Regression fit</h2><p id="fit-description">Observed values and fitted model</p></div><span id="best-model-pill" class="tag">BEST MODEL</span></div>
+            <div class="legend"><span><i class="dot observed"></i>Observed values</span><span><i class="dot fitted"></i>Best model fit</span></div>
+            <div id="fit-chart" class="chart"></div>
+          </article>
+        </section>
+
+        <article class="panel preview-panel">
+          <div class="section-heading"><div><h2>Dataset preview</h2><p id="preview-description">First 10 rows of the selected dataset</p></div><span class="tag" id="preview-count">PREVIEW</span></div>
+          <div class="table-scroll">
+            <table class="preview-table"><thead><tr><th id="preview-x-heading">Input feature</th><th id="preview-y-heading">Target</th></tr></thead><tbody id="dataset-preview"><tr><td colspan="2">Loading dataset preview…</td></tr></tbody></table>
+          </div>
+        </article>
+      </section>
+
+      <section id="residuals" class="two-charts page-section">
+        <article class="panel chart-panel">
+          <div class="section-heading"><div><h2>Actual vs. predicted</h2><p>Compare model predictions with actual test values</p></div></div>
+          <div class="legend"><span><i class="dot predicted"></i>Predictions</span><span><i class="dot ideal"></i>Ideal prediction</span></div>
+          <div id="prediction-chart" class="chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-heading"><div><h2>Residual plot</h2><p>Prediction errors against actual test values</p></div></div>
+          <div class="legend"><span><i class="dot residual"></i>Residuals</span><span><i class="dot ideal"></i>Zero error</span></div>
+          <div id="residual-chart" class="chart"></div>
+        </article>
+      </section>
+
+      <section id="comparison" class="panel comparison-panel page-section">
+        <div class="section-heading"><div><h2>Regression technique comparison</h2><p>All techniques evaluated on the same held-out test set</p></div><span class="tag">4 EVALUATION METRICS</span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Technique</th><th>MAE ↓</th><th>MSE ↓</th><th>RMSE ↓</th><th>R² ↑</th><th>Result</th></tr></thead>
+            <tbody id="metrics-table"><tr><td colspan="6">Run an analysis to compare models.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="performance-heading"><h3>Model performance by metric</h3><p>Bars are normalized within each metric for comparison.</p></div>
+        <div id="performance-bars" class="performance-bars"></div>
+      </section>
+
+      <section id="conclusions" class="panel conclusion-panel page-section">
+        <h2>Analysis conclusion</h2>
+        <p id="conclusion">Run regression to identify the most suitable technique for the selected dataset.</p>
+      </section>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </main>
+    <footer>Regression Explorer · Model evaluation and visualization</footer>
+  </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
